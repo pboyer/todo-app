@@ -15,9 +15,12 @@ import router from "next/router";
 import React, { useEffect, useState } from "react";
 import { APP_TITLE } from "./constants";
 import { auth, db } from "./firebase";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 interface Todo {
   id: string;
+  index: number;
   content: string;
   completed: boolean;
 }
@@ -39,6 +42,7 @@ export default function Home() {
       content: newTodo,
       completed: false,
       author: auth.currentUser?.uid,
+      index: todos.reduce((acc, todo) => Math.min(acc, todo.index ?? 0), 0) - 1,
     });
 
     setNewTodo("");
@@ -114,6 +118,36 @@ export default function Home() {
     await batch.commit();
   };
 
+  const dropTodo = (
+    todo: Todo,
+    droppedTodo: Todo,
+    placeDroppedBefore: boolean
+  ) => {
+    const sortedTodos = todos
+      .slice()
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+    // remove the dropped todo
+    sortedTodos.splice(sortedTodos.indexOf(droppedTodo), 1);
+
+    if (placeDroppedBefore) {
+      sortedTodos.splice(sortedTodos.indexOf(todo), 1, droppedTodo, todo);
+    } else {
+      sortedTodos.splice(sortedTodos.indexOf(todo), 1, todo, droppedTodo);
+    }
+
+    const batch = writeBatch(db);
+
+    let count = 0;
+    for (const todo of sortedTodos) {
+      const laRef = doc(db, "todos", todo.id);
+      batch.update(laRef, { index: count++ });
+    }
+
+    // Commit the batch
+    batch.commit();
+  };
+
   return (
     <PageWrapper>
       {user ? (
@@ -172,35 +206,35 @@ export default function Home() {
           </div>
           <div className="w-full  mb-5">
             <div className="grid grid-cols-6">
-              {todos.map((todo) => {
-                return (
-                  <div
-                    className="grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 mb-2"
-                    key={todo.id}
-                  >
-                    <div className="col-span-1 flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        className="w-5 h-5"
-                        checked={todo.completed}
-                        onChange={() =>
-                          updateTodo(todo.id, { completed: !todo.completed })
+              {todos
+                .slice()
+                .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+                .map((todo) => {
+                  return (
+                    <React.Fragment key={todo.id}>
+                      <DropPoint
+                        todo={todo}
+                        onDrop={(droppedTodo) =>
+                          dropTodo(todo, droppedTodo, true)
                         }
                       />
-                    </div>
-                    <TodoInput
-                      todo={todo}
-                      onCommitText={(v) => updateTodo(todo.id, { content: v })}
-                    />
-                    <button
-                      className="m-2 rounded col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700"
-                      onClick={() => deleteTodo(todo.id)}
-                    >
-                      X
-                    </button>
-                  </div>
-                );
-              })}
+                      <TodoItem
+                        key={todo.id}
+                        todo={todo}
+                        updateTodo={updateTodo}
+                        deleteTodo={deleteTodo}
+                      />
+                    </React.Fragment>
+                  );
+                })}
+              {todos.length > 2 && (
+                <DropPoint
+                  todo={todos[todos.length - 1]}
+                  onDrop={(droppedTodo) =>
+                    dropTodo(todos[todos.length - 1], droppedTodo, false)
+                  }
+                />
+              )}
             </div>
           </div>
         </>
@@ -234,6 +268,86 @@ export default function Home() {
         )
       )}
     </PageWrapper>
+  );
+}
+
+function DropPoint({
+  todo,
+  onDrop,
+}: {
+  todo: Todo;
+  onDrop: (todo: Todo) => void;
+}) {
+  const [{ isOver }, drop] = useDrop(
+    () => ({
+      accept: "TODO",
+      drop: (item) => onDrop(item as Todo),
+      collect: (monitor) => ({
+        isOver: !!monitor.isOver(),
+      }),
+    }),
+    [todo]
+  );
+
+  return (
+    <div
+      className={
+        "ease-in-out col-span-6" + (isOver ? " py-2 bg-slate-400" : " py-1")
+      }
+      ref={drop}
+    ></div>
+  );
+}
+
+function TodoItem({
+  todo,
+  updateTodo,
+  deleteTodo,
+}: {
+  todo: Todo;
+  updateTodo: (id: string, data: Partial<Todo>) => Promise<void>;
+  deleteTodo: (id: string) => Promise<void>;
+}): React.JSX.Element {
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: "TODO",
+      item: todo,
+      collect: (monitor) => ({
+        isDragging: !!monitor.isDragging(),
+      }),
+    }),
+    [todo]
+  );
+
+  return !isDragging ? (
+    <div
+      ref={drag}
+      className={
+        "grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 cursor-grab"
+      }
+      key={todo.id}
+    >
+      <div className="col-span-1 flex items-center justify-center">
+        <input
+          type="checkbox"
+          className="w-5 h-5"
+          checked={todo.completed}
+          onChange={() => updateTodo(todo.id, { completed: !todo.completed })}
+        />
+      </div>
+      <TodoInput
+        todo={todo}
+        onCommitText={(v) => updateTodo(todo.id, { content: v })}
+      />
+      <button
+        className="m-2 rounded col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700"
+        onClick={() => deleteTodo(todo.id)}
+      >
+        X
+      </button>
+    </div>
+  ) : (
+    <></>
   );
 }
 
@@ -273,12 +387,12 @@ function TodoInput({
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <DndProvider backend={HTML5Backend}>
       <main className="flex min-h-screen flex-col items-center justify-between p-6 bg-white dark:bg-slate-800 text-black dark:text-white">
         <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
           {children}
         </div>
       </main>
-    </>
+    </DndProvider>
   );
 }
