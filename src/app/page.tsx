@@ -1,16 +1,20 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import { GoogleAuthProvider, User, signInWithPopup } from "firebase/auth";
 import {
-  collection,
   addDoc,
-  query,
-  onSnapshot,
+  collection,
   deleteDoc,
   doc,
+  onSnapshot,
+  query,
   updateDoc,
+  where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "../../firebase";
+import React, { useEffect, useState } from "react";
+import { auth, db } from "./firebase";
+import Link from "next/link";
+import router from "next/router";
 
 interface Todo {
   id: string;
@@ -18,8 +22,9 @@ interface Todo {
   completed: boolean;
 }
 
+const provider = new GoogleAuthProvider();
+
 export default function Home() {
-  const ref = useRef<HTMLInputElement>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState<string>("");
 
@@ -28,21 +33,42 @@ export default function Home() {
   const addTodo = async (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!newTodo) {
+    if (!newTodo || !auth.currentUser) {
       return;
     }
 
     await addDoc(collection(db, "todos"), {
       content: newTodo,
       completed: false,
+      author: auth.currentUser?.uid,
     });
 
     setNewTodo("");
   };
 
+  const [user, setUser] = useState<User | null>(null);
+  const [userLoaded, setUserLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    return auth.onAuthStateChanged((user) => {
+      if (!userLoaded) {
+        setUserLoaded(true);
+      }
+
+      setUser(user);
+    });
+  }, []);
+
   // Read items
   useEffect(() => {
-    const q = query(collection(db, "todos"));
+    if (!user) {
+      return;
+    }
+
+    const q = query(
+      collection(db, "todos"),
+      where("author", "==", auth.currentUser?.uid)
+    );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const itemsArr: Todo[] = [];
@@ -55,7 +81,7 @@ export default function Home() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [user]);
 
   // Update a todo
   const updateTodo = async (id: string, data: Partial<Todo>) => {
@@ -91,63 +117,111 @@ export default function Home() {
   };
 
   return (
+    <PageWrapper>
+      {user ? (
+        <>
+          <div className="w-full text-center">
+            <button
+              className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 mb-4"
+              onClick={() => {
+                auth.signOut();
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+          <div className="bg-slate-100 pb-4">
+            <form className="grid grid-cols-6">
+              <input
+                className="col-span-5 p-4 border"
+                type="text"
+                placeholder="My todo"
+                value={newTodo}
+                onChange={(e) => setNewTodo(e.target.value)}
+              ></input>
+              <button
+                className="col-span-1 p-4 bg-slate-200"
+                type="submit"
+                onClick={addTodo}
+              >
+                +
+              </button>
+            </form>
+          </div>
+          <div className="w-full">
+            <div className="grid grid-cols-6 even:bg-gray-50 odd:bg-white">
+              {todos.map((todo) => {
+                return (
+                  <React.Fragment key={todo.id}>
+                    <input
+                      className="col-span-1 m-4"
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() =>
+                        updateTodo(todo.id, { completed: !todo.completed })
+                      }
+                    />
+                    <div className="col-span-4 p-4 ">{todo.content}</div>
+                    <button
+                      className="col-span-1 p-4 bg-slate-100"
+                      onClick={() => deleteTodo(todo.id)}
+                    >
+                      X
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+          <div className="bg-slate-100 grid grid-cols-2">
+            <button
+              className="grid-cols-1 bg-slate-300 p-4"
+              onClick={setAllCompleted}
+            >
+              Set all completed
+            </button>
+            <button className="grid-cols-1 bg-slate-200 p-4" onClick={clearAll}>
+              Clear
+            </button>
+          </div>
+        </>
+      ) : (
+        userLoaded && (
+          <div className="w-full text-center">
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4"
+              onClick={() => {
+                signInWithPopup(auth, provider)
+                  .then((result) => {
+                    const credential =
+                      GoogleAuthProvider.credentialFromResult(result);
+
+                    if (!credential) {
+                      return;
+                    }
+
+                    router.push("/");
+                  })
+                  .catch((error) => {
+                    console.log(error);
+                  });
+              }}
+            >
+              Signin with Google
+            </button>
+          </div>
+        )
+      )}
+    </PageWrapper>
+  );
+}
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
         <h1 className="text-2xl p-4 text-center">TODO App</h1>
-        <div className="bg-slate-100 pb-4">
-          <form className="grid grid-cols-6">
-            <input
-              className="col-span-5 p-4 border"
-              type="text"
-              placeholder="My todo"
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-            ></input>
-            <button
-              className="col-span-1 p-4 bg-slate-200"
-              type="submit"
-              onClick={addTodo}
-            >
-              +
-            </button>
-          </form>
-        </div>
-        <div className="w-full">
-          <div className="grid grid-cols-6 even:bg-gray-50 odd:bg-white">
-            {todos.map((todo) => {
-              return (
-                <React.Fragment key={todo.id}>
-                  <input
-                    className="col-span-1 m-4"
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() =>
-                      updateTodo(todo.id, { completed: !todo.completed })
-                    }
-                  />
-                  <div className="col-span-4 p-4 ">{todo.content}</div>
-                  <button
-                    className="col-span-1 p-4 bg-slate-100"
-                    onClick={() => deleteTodo(todo.id)}
-                  >
-                    X
-                  </button>
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-        <div className="bg-slate-100 grid grid-cols-2">
-          <button
-            className="grid-cols-1 bg-slate-300 p-4"
-            onClick={setAllCompleted}
-          >
-            Set all completed
-          </button>
-          <button className="grid-cols-1 bg-slate-200 p-4" onClick={clearAll}>
-            Clear
-          </button>
-        </div>
+        {children}
       </div>
     </main>
   );
