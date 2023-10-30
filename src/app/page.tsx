@@ -122,7 +122,7 @@ export default function Home() {
         <>
           <div className="w-full text-center">
             <button
-              className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 mb-4"
+              className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-2 rounded mb-4"
               onClick={() => {
                 auth.signOut();
               }}
@@ -130,17 +130,17 @@ export default function Home() {
               Sign out
             </button>
           </div>
-          <div className="bg-slate-100">
+          <div className="mb-2">
             <form className="grid grid-cols-6">
               <input
-                className="col-span-5 p-4 bg-slate-100"
+                className="col-span-5 p-4 bg-slate-100 text-black dark:bg-slate-900 dark:text-white mr-2 rounded"
                 type="text"
-                placeholder="My todo"
+                placeholder="Add a todo"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
               ></input>
               <button
-                className="col-span-1 p-4 bg-slate-300"
+                className="col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:text-white dark:hover:bg-slate-700 rounded"
                 type="submit"
                 onClick={addTodo}
               >
@@ -148,38 +148,47 @@ export default function Home() {
               </button>
             </form>
           </div>
-          <div className="bg-slate-100 grid grid-cols-2">
+          <div className="grid grid-cols-2 mb-2">
             <button
-              className="grid-cols-1 bg-slate-300 p-2"
+              className="grid-cols-1 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700 rounded p-2 mr-2"
               onClick={setAllCompleted}
+              disabled={todos.length === 0}
             >
               Set all completed
             </button>
-            <button className="grid-cols-1 bg-slate-200 p-2" onClick={clearAll}>
+            <button
+              className="grid-cols-1 bg-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700 rounded p-2"
+              onClick={clearAll}
+            >
               Clear
             </button>
           </div>
-          <div className="w-full">
-            <div className="grid grid-cols-6 even:bg-slate-200 odd:bg-slate">
+          <div className="w-full  mb-2">
+            <div className="grid grid-cols-6">
               {todos.map((todo) => {
                 return (
-                  <React.Fragment key={todo.id}>
+                  <div
+                    className="grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 mb-2"
+                    key={todo.id}
+                  >
                     <input
-                      className="col-span-1 m-4"
+                      className="col-span-1 m-6"
                       type="checkbox"
                       checked={todo.completed}
                       onChange={() =>
                         updateTodo(todo.id, { completed: !todo.completed })
                       }
                     />
-                    <div className="col-span-4 p-4 ">{todo.content}</div>
+                    <div className="col-span-4 p-4 flex items-center">
+                      {todo.content}
+                    </div>
                     <button
-                      className="col-span-1 p-4 bg-slate-100"
+                      className="m-2 rounded col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700"
                       onClick={() => deleteTodo(todo.id)}
                     >
                       X
                     </button>
-                  </React.Fragment>
+                  </div>
                 );
               })}
             </div>
@@ -189,7 +198,7 @@ export default function Home() {
         userLoaded && (
           <div className="w-full text-center">
             <button
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4"
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded"
               onClick={() => {
                 signInWithPopup(auth, provider)
                   .then((result) => {
@@ -207,7 +216,7 @@ export default function Home() {
                   });
               }}
             >
-              Signin with Google
+              Sign in with Google
             </button>
           </div>
         )
@@ -219,7 +228,7 @@ export default function Home() {
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-white">
+      <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-white dark:bg-slate-800 text-black dark:text-white">
         <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
           <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
           {children}
