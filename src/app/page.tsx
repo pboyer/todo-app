@@ -11,13 +11,10 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
-import { auth, db } from "./firebase";
-import Link from "next/link";
 import router from "next/router";
-import Head from "next/head";
-
-const APP_TITLE = "TODO";
+import React, { useEffect, useState } from "react";
+import { APP_TITLE } from "./constants";
+import { auth, db } from "./firebase";
 
 interface Todo {
   id: string;
@@ -222,9 +219,6 @@ export default function Home() {
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Head>
-        <title>{APP_TITLE}</title>
-      </Head>
       <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-white">
         <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
           <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
