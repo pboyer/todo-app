@@ -121,9 +121,9 @@ export default function Home() {
       {user ? (
         <>
           <div className="w-full text-center flex items-center justify-between">
-            <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
+            <h1 className="text-2xl text-center">{APP_TITLE}</h1>
             <button
-              className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-2 rounded mb-4"
+              className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-2 rounded"
               onClick={() => {
                 auth.signOut();
               }}
@@ -131,7 +131,7 @@ export default function Home() {
               Sign out
             </button>
           </div>
-          <div className="mb-6 mt-6">
+          <div className="mb-6 mt-8">
             <form className="grid grid-cols-6">
               <input
                 className="col-span-5 p-4 bg-slate-100 text-black dark:bg-slate-900 dark:text-white mr-2 rounded"
@@ -198,8 +198,9 @@ export default function Home() {
         </>
       ) : (
         userLoaded && (
-          <div className="w-full text-center">
-            <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
+          <div className="w-full text-center flex flex-col align-items justify-center p-24">
+            <h1 className="text-2xl p-4 text-center pb-10">{APP_TITLE}</h1>
+            <h2 className="text-slate-400 pb-10">Manage yourself</h2>
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded"
               onClick={() => {
