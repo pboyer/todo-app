@@ -134,7 +134,7 @@ export default function Home() {
           <div className="mb-6 mt-8">
             <form className="grid grid-cols-6">
               <input
-                className="col-span-5 p-4 bg-slate-100 text-black dark:bg-slate-900 dark:text-white mr-2 rounded"
+                className="col-span-5 p-4  text-black bg-slate-100 dark:bg-slate-900 focus:bg-slate-200 focus:dark:bg-slate-950 dark:text-white mr-2 rounded outline-none"
                 type="text"
                 placeholder="Add a todo"
                 value={newTodo}
