@@ -15,6 +15,9 @@ import React, { useEffect, useState } from "react";
 import { auth, db } from "./firebase";
 import Link from "next/link";
 import router from "next/router";
+import Head from "next/head";
+
+const APP_TITLE = "TODO";
 
 interface Todo {
   id: string;
@@ -130,17 +133,17 @@ export default function Home() {
               Sign out
             </button>
           </div>
-          <div className="bg-slate-100 pb-4">
+          <div className="bg-slate-100">
             <form className="grid grid-cols-6">
               <input
-                className="col-span-5 p-4 border"
+                className="col-span-5 p-4 bg-slate-100"
                 type="text"
                 placeholder="My todo"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
               ></input>
               <button
-                className="col-span-1 p-4 bg-slate-200"
+                className="col-span-1 p-4 bg-slate-300"
                 type="submit"
                 onClick={addTodo}
               >
@@ -148,8 +151,19 @@ export default function Home() {
               </button>
             </form>
           </div>
+          <div className="bg-slate-100 grid grid-cols-2">
+            <button
+              className="grid-cols-1 bg-slate-300 p-2"
+              onClick={setAllCompleted}
+            >
+              Set all completed
+            </button>
+            <button className="grid-cols-1 bg-slate-200 p-2" onClick={clearAll}>
+              Clear
+            </button>
+          </div>
           <div className="w-full">
-            <div className="grid grid-cols-6 even:bg-gray-50 odd:bg-white">
+            <div className="grid grid-cols-6 even:bg-slate-200 odd:bg-slate">
               {todos.map((todo) => {
                 return (
                   <React.Fragment key={todo.id}>
@@ -172,17 +186,6 @@ export default function Home() {
                 );
               })}
             </div>
-          </div>
-          <div className="bg-slate-100 grid grid-cols-2">
-            <button
-              className="grid-cols-1 bg-slate-300 p-4"
-              onClick={setAllCompleted}
-            >
-              Set all completed
-            </button>
-            <button className="grid-cols-1 bg-slate-200 p-4" onClick={clearAll}>
-              Clear
-            </button>
           </div>
         </>
       ) : (
@@ -218,11 +221,16 @@ export default function Home() {
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
-        <h1 className="text-2xl p-4 text-center">TODO App</h1>
-        {children}
-      </div>
-    </main>
+    <>
+      <Head>
+        <title>{APP_TITLE}</title>
+      </Head>
+      <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-white">
+        <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
+          <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
+          {children}
+        </div>
+      </main>
+    </>
   );
 }
