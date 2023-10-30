@@ -30,14 +30,12 @@ export default function Home() {
 
   // Add item
 
-  const addTodo = async (e: React.MouseEvent) => {
-    e.preventDefault();
-
+  const addTodo = async () => {
     if (!newTodo || !auth.currentUser) {
       return;
     }
 
-    await addDoc(collection(db, "todos"), {
+    addDoc(collection(db, "todos"), {
       content: newTodo,
       completed: false,
       author: auth.currentUser?.uid,
@@ -139,11 +137,19 @@ export default function Home() {
                 placeholder="Add a todo"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
+                onKeyUp={(e) => {
+                  if (e.code === "Enter") {
+                    addTodo();
+                  }
+                }}
               ></input>
               <button
                 className="col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:text-white dark:hover:bg-slate-700 rounded"
                 type="submit"
-                onClick={addTodo}
+                onClick={(e) => {
+                  e.preventDefault();
+                  addTodo();
+                }}
               >
                 +
               </button>
@@ -175,15 +181,17 @@ export default function Home() {
                     <div className="col-span-1 flex items-center justify-center">
                       <input
                         type="checkbox"
+                        className="w-5 h-5"
                         checked={todo.completed}
                         onChange={() =>
                           updateTodo(todo.id, { completed: !todo.completed })
                         }
                       />
                     </div>
-                    <div className="col-span-4 p-4 flex items-center">
-                      {todo.content}
-                    </div>
+                    <TodoInput
+                      todo={todo}
+                      onCommitText={(v) => updateTodo(todo.id, { content: v })}
+                    />
                     <button
                       className="m-2 rounded col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700"
                       onClick={() => deleteTodo(todo.id)}
@@ -226,6 +234,40 @@ export default function Home() {
         )
       )}
     </PageWrapper>
+  );
+}
+
+function TodoInput({
+  todo,
+  onCommitText,
+}: {
+  todo: Todo;
+  onCommitText: (v: string) => void;
+}) {
+  const [editingTodo, setEditingTodo] = useState<string>(todo.content);
+  useEffect(() => {
+    setEditingTodo(todo.content);
+  }, [todo]);
+
+  return (
+    <div className="col-span-4 flex items-center">
+      <input
+        type="text"
+        value={editingTodo}
+        onChange={(e) => {
+          setEditingTodo(e.target.value);
+        }}
+        onBlur={() => {
+          onCommitText(editingTodo);
+        }}
+        onKeyUp={(e) => {
+          if (e.code === "Enter") {
+            onCommitText(editingTodo);
+          }
+        }}
+        className="bg-transparent w-full p-4"
+      ></input>
+    </div>
   );
 }
 
