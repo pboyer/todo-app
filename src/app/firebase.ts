@@ -11,7 +11,7 @@ import { getAuth } from "firebase/auth";
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 export const firebaseConfig = {
   apiKey: "AIzaSyAgLxorS4DPzo8LCMei-dg_7XwpzXlbzI4",
-  authDomain: "todo-app.ptrbyr.com",
+  authDomain: "todo-app-4607d.firebaseapp.com",
   projectId: "todo-app-4607d",
   storageBucket: "todo-app-4607d.appspot.com",
   messagingSenderId: "367635955535",
