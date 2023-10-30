@@ -120,7 +120,8 @@ export default function Home() {
     <PageWrapper>
       {user ? (
         <>
-          <div className="w-full text-center">
+          <div className="w-full text-center flex items-center justify-between">
+            <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
             <button
               className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-2 rounded mb-4"
               onClick={() => {
@@ -130,7 +131,7 @@ export default function Home() {
               Sign out
             </button>
           </div>
-          <div className="mb-2">
+          <div className="mb-6 mt-6">
             <form className="grid grid-cols-6">
               <input
                 className="col-span-5 p-4 bg-slate-100 text-black dark:bg-slate-900 dark:text-white mr-2 rounded"
@@ -148,13 +149,13 @@ export default function Home() {
               </button>
             </form>
           </div>
-          <div className="grid grid-cols-2 mb-2">
+          <div className="grid grid-cols-2 mb-6">
             <button
               className="grid-cols-1 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700 rounded p-2 mr-2"
               onClick={setAllCompleted}
               disabled={todos.length === 0}
             >
-              Set all completed
+              Complete all
             </button>
             <button
               className="grid-cols-1 bg-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700 rounded p-2"
@@ -163,7 +164,7 @@ export default function Home() {
               Clear
             </button>
           </div>
-          <div className="w-full  mb-2">
+          <div className="w-full  mb-5">
             <div className="grid grid-cols-6">
               {todos.map((todo) => {
                 return (
@@ -171,14 +172,15 @@ export default function Home() {
                     className="grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 mb-2"
                     key={todo.id}
                   >
-                    <input
-                      className="col-span-1 m-6"
-                      type="checkbox"
-                      checked={todo.completed}
-                      onChange={() =>
-                        updateTodo(todo.id, { completed: !todo.completed })
-                      }
-                    />
+                    <div className="col-span-1 flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={todo.completed}
+                        onChange={() =>
+                          updateTodo(todo.id, { completed: !todo.completed })
+                        }
+                      />
+                    </div>
                     <div className="col-span-4 p-4 flex items-center">
                       {todo.content}
                     </div>
@@ -197,6 +199,7 @@ export default function Home() {
       ) : (
         userLoaded && (
           <div className="w-full text-center">
+            <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded"
               onClick={() => {
@@ -228,9 +231,8 @@ export default function Home() {
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-white dark:bg-slate-800 text-black dark:text-white">
+      <main className="flex min-h-screen flex-col items-center justify-between p-6 bg-white dark:bg-slate-800 text-black dark:text-white">
         <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
-          <h1 className="text-2xl p-4 text-center">{APP_TITLE}</h1>
           {children}
         </div>
       </main>
