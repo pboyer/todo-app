@@ -295,8 +295,8 @@ function DropTarget({
   return (
     <div
       className={
-        "transition-all duration-100 ease-in-out col-span-6 my-1" +
-        (isOver ? " py-8 bg-slate-400" : " py-1")
+        "transition-all duration-100 ease-in-out col-span-6 my-1 rounded" +
+        (isOver ? " py-9 bg-slate-400" : " py-1")
       }
       ref={drop}
     ></div>
