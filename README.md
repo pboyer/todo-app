@@ -5,9 +5,11 @@ A super simple todo app built with next.js, firebase, and tailwind.
 ## Features
 
 - Creating todos
+- Drag & drop reordering
+- Eding todos
 - Deleting todos
-- Marking todos as completed
 - Google Auth
+- Mobile support
 
 ## Running
 
