@@ -17,12 +17,20 @@ import { APP_TITLE } from "./constants";
 import { auth, db } from "./firebase";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend } from "react-dnd-touch-backend";
 
 interface Todo {
   id: string;
   index: number;
   content: string;
   completed: boolean;
+}
+
+function isTouchDevice() {
+  return (
+    typeof window === "object" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+  );
 }
 
 const provider = new GoogleAuthProvider();
@@ -212,15 +220,10 @@ export default function Home() {
                 .map((todo) => {
                   return (
                     <React.Fragment key={todo.id}>
-                      <DropPoint
-                        todo={todo}
-                        onDrop={(droppedTodo) =>
-                          dropTodo(todo, droppedTodo, true)
-                        }
-                      />
                       <TodoItem
                         key={todo.id}
                         todo={todo}
+                        dropTodo={dropTodo}
                         updateTodo={updateTodo}
                         deleteTodo={deleteTodo}
                       />
@@ -228,7 +231,7 @@ export default function Home() {
                   );
                 })}
               {todos.length > 2 && (
-                <DropPoint
+                <DropTarget
                   todo={todos[todos.length - 1]}
                   onDrop={(droppedTodo) =>
                     dropTodo(todos[todos.length - 1], droppedTodo, false)
@@ -271,7 +274,7 @@ export default function Home() {
   );
 }
 
-function DropPoint({
+function DropTarget({
   todo,
   onDrop,
 }: {
@@ -292,7 +295,8 @@ function DropPoint({
   return (
     <div
       className={
-        "ease-in-out col-span-6" + (isOver ? " py-2 bg-slate-400" : " py-1")
+        "transition-all duration-100 ease-in-out col-span-6 my-1" +
+        (isOver ? " py-8 bg-slate-400" : " py-1")
       }
       ref={drop}
     ></div>
@@ -303,49 +307,65 @@ function TodoItem({
   todo,
   updateTodo,
   deleteTodo,
+  dropTodo,
 }: {
   todo: Todo;
   updateTodo: (id: string, data: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
+  dropTodo: (
+    todo: Todo,
+    droppedTodo: Todo,
+    placeDroppedBefore: boolean
+  ) => void;
 }): React.JSX.Element {
+  const [forbidDrag, setForbidDrag] = useState(false);
   const [{ isDragging }, drag] = useDrag(
     () => ({
       type: "TODO",
       item: todo,
+      canDrag: !forbidDrag,
       collect: (monitor) => ({
         isDragging: !!monitor.isDragging(),
       }),
     }),
-    [todo]
+    [forbidDrag, todo]
   );
 
   return !isDragging ? (
-    <div
-      ref={drag}
-      className={
-        "grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 cursor-grab"
-      }
-      key={todo.id}
-    >
-      <div className="col-span-1 flex items-center justify-center">
-        <input
-          type="checkbox"
-          className="w-5 h-5"
-          checked={todo.completed}
-          onChange={() => updateTodo(todo.id, { completed: !todo.completed })}
-        />
-      </div>
-      <TodoInput
+    <>
+      <DropTarget
         todo={todo}
-        onCommitText={(v) => updateTodo(todo.id, { content: v })}
+        onDrop={(droppedTodo) => dropTodo(todo, droppedTodo, true)}
       />
-      <button
-        className="m-2 rounded col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700"
-        onClick={() => deleteTodo(todo.id)}
+      <div
+        ref={drag}
+        className={
+          "grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 cursor-grab rounded"
+        }
+        key={todo.id}
       >
-        X
-      </button>
-    </div>
+        <div className="col-span-1 flex items-center justify-center">
+          <input
+            type="checkbox"
+            className="w-5 h-5"
+            checked={todo.completed}
+            onChange={() => updateTodo(todo.id, { completed: !todo.completed })}
+          />
+        </div>
+        <TodoInput
+          todo={todo}
+          onFocus={() => setForbidDrag(true)}
+          onBlur={() => setForbidDrag(false)}
+          onCommitText={(v) => updateTodo(todo.id, { content: v })}
+        />
+        <button
+          className="m-2 rounded col-span-1 p-4 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700"
+          onClick={() => deleteTodo(todo.id)}
+        >
+          X
+        </button>
+      </div>
+    </>
   ) : (
     <></>
   );
@@ -353,9 +373,13 @@ function TodoItem({
 
 function TodoInput({
   todo,
+  onFocus,
+  onBlur,
   onCommitText,
 }: {
   todo: Todo;
+  onFocus: () => void;
+  onBlur: () => void;
   onCommitText: (v: string) => void;
 }) {
   const [editingTodo, setEditingTodo] = useState<string>(todo.content);
@@ -368,10 +392,12 @@ function TodoInput({
       <input
         type="text"
         value={editingTodo}
+        onFocus={() => onFocus()}
         onChange={(e) => {
           setEditingTodo(e.target.value);
         }}
         onBlur={() => {
+          onBlur();
           onCommitText(editingTodo);
         }}
         onKeyUp={(e) => {
@@ -387,7 +413,7 @@ function TodoInput({
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={isTouchDevice() ? TouchBackend : HTML5Backend}>
       <main className="flex min-h-screen flex-col items-center justify-between p-6 bg-white dark:bg-slate-800 text-black dark:text-white">
         <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
           {children}
