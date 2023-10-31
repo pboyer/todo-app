@@ -9,6 +9,7 @@ A super simple todo app built with next.js, firebase, and tailwind.
 - Eding todos
 - Deleting todos
 - Google Auth
+- Dark mode/light mode via system settings
 - Mobile support
 
 ## Running
