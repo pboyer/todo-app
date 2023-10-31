@@ -230,7 +230,7 @@ export default function Home() {
                     </React.Fragment>
                   );
                 })}
-              {todos.length > 2 && (
+              {todos.length >= 2 && (
                 <DropTarget
                   todo={todos[todos.length - 1]}
                   onDrop={(droppedTodo) =>
