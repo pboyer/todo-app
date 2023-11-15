@@ -342,7 +342,8 @@ function TodoInput({
             onCommitText(editingTodo);
           }
         }}
-        className="bg-transparent w-full p-4"
+        className="w-full p-4  text-black bg-slate-100 dark:bg-slate-900 focus:bg-slate-200 focus:dark:bg-slate-950 dark:text-white mr-2 rounded outline-none"
+        // className="bg-transparent w-full p-4"
       ></input>
     </div>
   );
