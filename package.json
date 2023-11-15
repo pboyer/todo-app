@@ -9,13 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/react-beautiful-dnd": "^13.1.7",
     "firebase": "^10.5.2",
     "firebaseui": "^6.1.0",
     "next": "14.0.0",
     "react": "^18",
-    "react-dnd": "^16.0.1",
-    "react-dnd-html5-backend": "^16.0.1",
-    "react-dnd-touch-backend": "^16.0.1",
+    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18",
     "react-firebase-hooks": "^5.1.1",
     "react-firebaseui": "^6.0.0"

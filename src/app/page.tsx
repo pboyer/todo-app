@@ -13,24 +13,21 @@ import {
 } from "firebase/firestore";
 import router from "next/router";
 import React, { useEffect, useState } from "react";
+import {
+  DragDropContext,
+  Draggable,
+  DropResult,
+  Droppable,
+  OnDragEndResponder,
+} from "react-beautiful-dnd";
 import { APP_TITLE } from "./constants";
 import { auth, db } from "./firebase";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { TouchBackend } from "react-dnd-touch-backend";
 
 interface Todo {
   id: string;
   index: number;
   content: string;
   completed: boolean;
-}
-
-function isTouchDevice() {
-  return (
-    typeof window === "object" &&
-    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
-  );
 }
 
 const provider = new GoogleAuthProvider();
@@ -126,23 +123,21 @@ export default function Home() {
     await batch.commit();
   };
 
-  const dropTodo = (
-    todo: Todo,
-    droppedTodo: Todo,
-    placeDroppedBefore: boolean
-  ) => {
+  const onDragEnd: OnDragEndResponder = (result: DropResult) => {
+    // dropped outside the list
+    if (!result.destination) {
+      return;
+    }
+
     const sortedTodos = todos
       .slice()
       .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
 
-    // remove the dropped todo
-    sortedTodos.splice(sortedTodos.indexOf(droppedTodo), 1);
-
-    if (placeDroppedBefore) {
-      sortedTodos.splice(sortedTodos.indexOf(todo), 1, droppedTodo, todo);
-    } else {
-      sortedTodos.splice(sortedTodos.indexOf(todo), 1, todo, droppedTodo);
-    }
+    sortedTodos.splice(
+      result.destination.index,
+      0,
+      sortedTodos.splice(result.source.index, 1)[0]
+    );
 
     const batch = writeBatch(db);
 
@@ -213,32 +208,42 @@ export default function Home() {
             </button>
           </div>
           <div className="w-full  mb-5">
-            <div className="grid grid-cols-6">
-              {todos
-                .slice()
-                .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-                .map((todo) => {
-                  return (
-                    <React.Fragment key={todo.id}>
-                      <TodoItem
-                        key={todo.id}
-                        todo={todo}
-                        dropTodo={dropTodo}
-                        updateTodo={updateTodo}
-                        deleteTodo={deleteTodo}
-                      />
-                    </React.Fragment>
-                  );
-                })}
-              {todos.length >= 2 && (
-                <DropTarget
-                  todo={todos[todos.length - 1]}
-                  onDrop={(droppedTodo) =>
-                    dropTodo(todos[todos.length - 1], droppedTodo, false)
-                  }
-                />
-              )}
-            </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="droppable">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    {todos
+                      .slice()
+                      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+                      .map((todo, index) => (
+                        <Draggable
+                          key={todo.id}
+                          draggableId={todo.id}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <React.Fragment key={todo.id}>
+                                <TodoItem
+                                  key={todo.id}
+                                  todo={todo}
+                                  updateTodo={updateTodo}
+                                  deleteTodo={deleteTodo}
+                                />
+                              </React.Fragment>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </div>
         </>
       ) : (
@@ -274,76 +279,18 @@ export default function Home() {
   );
 }
 
-function DropTarget({
-  todo,
-  onDrop,
-}: {
-  todo: Todo;
-  onDrop: (todo: Todo) => void;
-}) {
-  const [{ isOver }, drop] = useDrop(
-    () => ({
-      accept: "TODO",
-      drop: (item) => onDrop(item as Todo),
-      collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
-      }),
-    }),
-    [todo]
-  );
-
-  return (
-    <div
-      className={
-        "transition-all duration-100 ease-in-out col-span-6 my-1 rounded" +
-        (isOver ? " py-9 bg-slate-400" : " py-1")
-      }
-      ref={drop}
-    ></div>
-  );
-}
-
 function TodoItem({
   todo,
   updateTodo,
   deleteTodo,
-  dropTodo,
 }: {
   todo: Todo;
   updateTodo: (id: string, data: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
-  dropTodo: (
-    todo: Todo,
-    droppedTodo: Todo,
-    placeDroppedBefore: boolean
-  ) => void;
 }): React.JSX.Element {
-  const [forbidDrag, setForbidDrag] = useState(false);
-  const [{ isDragging }, drag] = useDrag(
-    () => ({
-      type: "TODO",
-      item: todo,
-      canDrag: !forbidDrag,
-      collect: (monitor) => ({
-        isDragging: !!monitor.isDragging(),
-      }),
-    }),
-    [forbidDrag, todo]
-  );
-
-  return !isDragging ? (
-    <>
-      <DropTarget
-        todo={todo}
-        onDrop={(droppedTodo) => dropTodo(todo, droppedTodo, true)}
-      />
-      <div
-        ref={drag}
-        className={
-          "grid grid-cols-6 col-span-6 bg-slate-100 dark:bg-slate-900 cursor-grab rounded"
-        }
-        key={todo.id}
-      >
+  return (
+    <div key={todo.id} className="col-span-6">
+      <div className="w-full grid grid-cols-6 mb-2 bg-slate-100 dark:bg-slate-900 cursor-grab rounded">
         <div className="col-span-1 flex items-center justify-center">
           <input
             type="checkbox"
@@ -354,8 +301,6 @@ function TodoItem({
         </div>
         <TodoInput
           todo={todo}
-          onFocus={() => setForbidDrag(true)}
-          onBlur={() => setForbidDrag(false)}
           onCommitText={(v) => updateTodo(todo.id, { content: v })}
         />
         <button
@@ -365,21 +310,15 @@ function TodoItem({
           X
         </button>
       </div>
-    </>
-  ) : (
-    <></>
+    </div>
   );
 }
 
 function TodoInput({
   todo,
-  onFocus,
-  onBlur,
   onCommitText,
 }: {
   todo: Todo;
-  onFocus: () => void;
-  onBlur: () => void;
   onCommitText: (v: string) => void;
 }) {
   const [editingTodo, setEditingTodo] = useState<string>(todo.content);
@@ -392,12 +331,10 @@ function TodoInput({
       <input
         type="text"
         value={editingTodo}
-        onFocus={() => onFocus()}
         onChange={(e) => {
           setEditingTodo(e.target.value);
         }}
         onBlur={() => {
-          onBlur();
           onCommitText(editingTodo);
         }}
         onKeyUp={(e) => {
@@ -413,12 +350,10 @@ function TodoInput({
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <DndProvider backend={isTouchDevice() ? TouchBackend : HTML5Backend}>
-      <main className="flex min-h-screen flex-col items-center justify-between p-6 bg-white dark:bg-slate-800 text-black dark:text-white">
-        <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
-          {children}
-        </div>
-      </main>
-    </DndProvider>
+    <main className="flex min-h-screen flex-col items-center justify-between p-6 bg-white dark:bg-slate-800 text-black dark:text-white">
+      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
+        {children}
+      </div>
+    </main>
   );
 }
