@@ -101,6 +101,10 @@ export default function Home() {
   };
 
   const clearAll = async () => {
+    if (!confirm("Are you sure you want to delete all todos?")) {
+      return;
+    }
+
     const batch = writeBatch(db);
 
     for (const todo of todos) {
